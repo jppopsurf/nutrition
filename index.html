@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Nutrition</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --bg: #0f0f11; --card: #1a1a1f; --card2: #222228; --border: #2e2e38;
+    --accent: #7eeea0; --accent2: #5bc8f5; --accent3: #f5a623;
+    --text: #f0f0f4; --muted: #888899; --danger: #ff6b6b;
+    --prot-color: #7eeea0; --cal-color: #f5a623;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); max-width: 390px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; }
+  .header { padding: 20px 20px 12px; background: var(--bg); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .date-label { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .notion-badge { display: flex; align-items: center; gap: 5px; background: var(--card2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--muted); }
+  .notion-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .tabs { display: flex; gap: 4px; padding: 10px 20px 0; border-bottom: 1px solid var(--border); }
+  .tab { padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--muted); transition: all 0.2s; }
+  .tab.active { background: var(--card); color: var(--text); }
+  .content { padding: 16px 20px; }
+  .rings-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .ring-card { flex: 1; background: var(--card); border-radius: 16px; padding: 14px 12px; border: 1px solid var(--border); text-align: center; }
+  .ring-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .ring-value { font-size: 22px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .ring-value.prot { color: var(--prot-color); } .ring-value.cal { color: var(--cal-color); }
+  .ring-target { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .ring-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .ring-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .ring-fill.prot { background: var(--prot-color); } .ring-fill.cal { background: var(--cal-color); }
+  .repas-section { margin-bottom: 14px; }
+  .repas-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--card); border-radius: 12px 12px 0 0; border: 1px solid var(--border); border-bottom: none; }
+  .repas-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .repas-badge { font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 8px; border-radius: 20px; background: var(--card2); }
+  .repas-badge.prot { color: var(--prot-color); } .repas-badge.cal { color: var(--cal-color); }
+  .repas-totals { display: flex; gap: 8px; }
+  .food-list { background: var(--card); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; }
+  .food-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); animation: fadeIn 0.3s ease; }
+  .food-item:last-child { border-bottom: none; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+  .food-name { font-size: 13px; font-weight: 500; } .food-qty { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .food-macros { display: flex; gap: 10px; align-items: center; }
+  .macro { font-size: 11px; font-family: 'DM Mono', monospace; }
+  .macro.p { color: var(--prot-color); } .macro.c { color: var(--cal-color); }
+  .del-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; padding: 0 0 0 8px; opacity: 0.5; transition: opacity 0.2s; }
+  .del-btn:hover { opacity: 1; }
+  .add-btn { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: none; border: 2px dashed var(--border); border-radius: 12px; color: var(--muted); font-size: 13px; cursor: pointer; width: 100%; font-family: 'DM Sans', sans-serif; transition: all 0.2s; margin-top: 4px; }
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: flex; align-items: flex-end; backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--card); border-radius: 24px 24px 0 0; width: 100%; padding: 20px; border: 1px solid var(--border); border-bottom: none; transform: translateY(100%); transition: transform 0.3s ease; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+  select, input[type="number"], input[type="text"] { width: 100%; padding: 12px 14px; background: var(--card2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif; -webkit-appearance: none; outline: none; transition: border-color 0.2s; }
+  select:focus, input:focus { border-color: var(--accent); }
+  .food-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; max-height: 200px; overflow-y: auto; }
+  .food-chip { padding: 10px 12px; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; font-size: 12px; cursor: pointer; transition: all 0.15s; text-align: left; }
+  .food-chip:hover { border-color: var(--accent); }
+  .food-chip.selected { border-color: var(--accent); background: rgba(126,238,160,0.1); }
+  .food-chip .chip-name { font-weight: 500; margin-bottom: 2px; }
+  .food-chip .chip-macro { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .macro-preview { display: flex; gap: 10px; padding: 12px; background: var(--card2); border-radius: 10px; margin-bottom: 14px; }
+  .macro-preview-item { flex: 1; text-align: center; }
+  .macro-preview-item .val { font-size: 18px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .macro-preview-item .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn { flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .btn-cancel { background: var(--card2); color: var(--muted); }
+  .btn-save { background: var(--accent); color: #0f0f11; }
+  .btn-save:active { transform: scale(0.97); }
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+  .add-food-link { text-align: center; font-size: 12px; color: var(--accent2); cursor: pointer; padding: 8px; text-decoration: underline; }
+  .notion-status { font-size: 11px; text-align: center; padding: 6px; border-radius: 8px; margin-bottom: 10px; font-family: 'DM Mono', monospace; }
+  .notion-status.sending { color: var(--accent2); background: rgba(91,200,245,0.1); }
+  .notion-status.ok { color: var(--accent); background: rgba(126,238,160,0.1); }
+  .notion-status.err { color: var(--danger); background: rgba(255,107,107,0.1); }
+  .week-chart { background: var(--card); border-radius: 16px; padding: 16px; border: 1px solid var(--border); margin-bottom: 14px; }
+  .week-chart h3 { font-size: 13px; font-weight: 600; margin-bottom: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .week-bars { display: flex; gap: 6px; align-items: flex-end; height: 80px; }
+  .week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .week-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.5s ease; }
+  .week-bar.prot { background: var(--prot-color); } .week-bar.cal { background: rgba(245,166,35,0.5); }
+  .week-day { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .week-legend { display: flex; gap: 14px; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 390px; background: var(--card); border-top: 1px solid var(--border); display: flex; padding: 12px 20px 20px; gap: 4px; z-index: 100; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px; border-radius: 10px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 10px; font-family: 'DM Sans', sans-serif; transition: color 0.2s; }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; }
+  .empty { text-align: center; padding: 30px; color: var(--muted); font-size: 13px; }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+  .new-food-form { display: none; }
+  .new-food-form.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>🥗 Nutrition</h1>
+      <div class="date-label" id="todayLabel"></div>
+    </div>
+    <div class="notion-badge"><div class="dot"></div>Notion</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('today')">Aujourd'hui</button>
+    <button class="tab" onclick="switchTab('week')">Semaine</button>
+    <button class="tab" onclick="switchTab('db')">Aliments</button>
+  </div>
+</div>
+<div class="content">
+  <div id="tab-today">
+    <div class="rings-row">
+      <div class="ring-card">
+        <div class="ring-label">Protéines</div>
+        <div class="ring-value prot" id="totalProt">0g</div>
+        <div class="ring-target">/ 120g</div>
+        <div class="ring-bar"><div class="ring-fill prot" id="barProt" style="width:0%"></div></div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-label">Calories</div>
+        <div class="ring-value cal" id="totalCal">0</div>
+        <div class="ring-target">/ ~1800 kcal</div>
+        <div class="ring-bar"><div class="ring-fill cal" id="barCal" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div id="repas-container"></div>
+  </div>
+  <div id="tab-week" style="display:none">
+    <div class="week-chart">
+      <h3>Protéines — 7 jours</h3>
+      <div class="week-bars" id="weekBarsP"></div>
+      <div class="week-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--prot-color)"></div>Protéines (g)</div></div>
+    </div>
+    <div class="week-chart">
+      <h3>Calories — 7 jours</h3>
+      <div class="week-bars" id="weekBarsC"></div>
+      <div class="week-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--cal-color)"></div>Calories (kcal)</div></div>
+    </div>
+  </div>
+  <div id="tab-db" style="display:none">
+    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Base alimentaire — <span id="dbCount">0</span> aliments</div>
+    <div id="db-list"></div>
+    <button class="add-btn" onclick="openModal(null,true)" style="margin-top:8px">＋ Ajouter un aliment à la base</button>
+  </div>
+</div>
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="switchTab('today')"><div class="nav-icon">📋</div>Aujourd'hui</button>
+  <button class="nav-item" onclick="switchTab('week')"><div class="nav-icon">📊</div>Semaine</button>
+  <button class="nav-item" onclick="switchTab('db')"><div class="nav-icon">🗃️</div>Aliments</button>
+</div>
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="modalTitle">Ajouter un aliment</h3>
+    <div id="notionStatus" class="notion-status" style="display:none"></div>
+    <div id="selectMode">
+      <div class="field">
+        <label>Repas</label>
+        <select id="repasSelect">
+          <option value="Déjeuner">☀️ Déjeuner</option>
+          <option value="Dîner">🌙 Dîner</option>
+          <option value="Soirée">🥂 Soirée</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Choisir un aliment</label>
+        <div class="food-select-grid" id="foodGrid"></div>
+      </div>
+      <div class="field">
+        <label>Quantité (g)</label>
+        <input type="number" id="qtyInput" placeholder="150" min="1" oninput="updatePreview()">
+      </div>
+      <div class="macro-preview">
+        <div class="macro-preview-item"><div class="val" id="prevProt" style="color:var(--prot-color)">0g</div><div class="lbl">Protéines</div></div>
+        <div class="macro-preview-item"><div class="val" id="prevCal" style="color:var(--cal-color)">0</div><div class="lbl">Calories</div></div>
+      </div>
+      <div class="add-food-link" onclick="toggleNewFood()">＋ Ajouter un nouvel aliment à la base</div>
+      <div class="new-food-form" id="newFoodForm">
+        <div class="field"><label>Nom</label><input type="text" id="newFoodName" placeholder="Ex: Thon en boîte"></div>
+        <div style="display:flex;gap:8px">
+          <div class="field" style="flex:1"><label>Protéines /100g</label><input type="number" id="newFoodProt" placeholder="25"></div>
+          <div class="field" style="flex:1"><label>Calories /100g</label><input type="number" id="newFoodCal" placeholder="116"></div>
+        </div>
+        <button class="btn btn-save" style="width:100%;margin-bottom:10px" onclick="saveNewFood()">Enregistrer dans la base</button>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-save" id="saveBtn" onclick="saveEntry()" disabled>Enregistrer</button>
+    </div>
+  </div>
+</div>
+<script>
+const NOTION_DB_ID = "6f1a79e0340b4ce8a0033921c10d6127";
+let foodDB = [
+  {name:"Poulet (blanc)",prot:31,cal:165},{name:"Poulet (haut de cuisse)",prot:26,cal:215},
+  {name:"Porc (filet)",prot:22,cal:143},{name:"Veau",prot:21,cal:172},
+  {name:"Lapin",prot:21,cal:136},{name:"Œufs (entiers)",prot:13,cal:143},
+  {name:"Cabillaud",prot:18,cal:82},{name:"Lieu noir",prot:18,cal:90},
+  {name:"Saumon",prot:20,cal:208},{name:"Thon (boîte)",prot:25,cal:116},
+  {name:"Jambon blanc",prot:16,cal:107},{name:"Lentilles (cuites)",prot:9,cal:116},
+  {name:"Pois chiches (cuits)",prot:7,cal:164},{name:"Haricots blancs (cuits)",prot:7,cal:127},
+  {name:"Pâtes (sèches)",prot:13,cal:357},{name:"Riz (sec)",prot:7,cal:365},
+  {name:"Comté",prot:27,cal:413},{name:"Chèvre frais",prot:14,cal:230},
+  {name:"Parmesan",prot:36,cal:431},{name:"Petits suisses",prot:8,cal:97},
+  {name:"Yaourt grec Delta",prot:6.5,cal:97},{name:"Lait d'avoine (10cl)",prot:1,cal:47},
+  {name:"Salade verte",prot:1.4,cal:17},{name:"Tomates",prot:0.9,cal:18}
+];
+let today=new Date().toISOString().slice(0,10);
+let entries=JSON.parse(localStorage.getItem('nutri_entries')||'{}');
+let weekData=JSON.parse(localStorage.getItem('nutri_week')||'{}');
+let selectedFood=null,dbMode=false,currentRepas=null;
+document.getElementById('todayLabel').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('dbCount').textContent=foodDB.length;
+function getToday(){return entries[today]||{Déjeuner:[],Dîner:[],Soirée:[]};}
+function saveToday(data){entries[today]=data;localStorage.setItem('nutri_entries',JSON.stringify(entries));updateWeekData();}
+function updateWeekData(){
+  getLast7Days().forEach(d=>{
+    const day=entries[d]||{};let p=0,c=0;
+    Object.values(day).flat().forEach(e=>{p+=e.prot;c+=e.cal;});
+    weekData[d]={prot:Math.round(p),cal:Math.round(c)};
+  });
+  localStorage.setItem('nutri_week',JSON.stringify(weekData));
+}
+function renderToday(){
+  const data=getToday();let totalP=0,totalC=0;
+  const container=document.getElementById('repas-container');container.innerHTML='';
+  const repasOrder=['Déjeuner','Dîner','Soirée'];
+  const repasEmoji={Déjeuner:'☀️',Dîner:'🌙',Soirée:'🥂'};
+  repasOrder.forEach(repas=>{
+    const items=data[repas]||[];let rP=0,rC=0;
+    items.forEach(i=>{rP+=i.prot;rC+=i.cal;totalP+=i.prot;totalC+=i.cal;});
+    const sec=document.createElement('div');sec.className='repas-section';
+    const foodRows=items.length>0?items.map((item,idx)=>`
+      <div class="food-item">
+        <div><div class="food-name">${item.name}</div><div class="food-qty">${item.qty}g</div></div>
+        <div class="food-macros">
+          <span class="macro p">${item.prot.toFixed(1)}g P</span>
+          <span class="macro c">${Math.round(item.cal)} kcal</span>
+          <button class="del-btn" onclick="deleteEntry('${repas}',${idx})">✕</button>
+        </div>
+      </div>`).join(''):`<div class="empty"><div class="empty-icon">○</div>Aucun aliment</div>`;
+    sec.innerHTML=`
+      <div class="repas-header">
+        <div class="repas-title">${repasEmoji[repas]} ${repas}</div>
+        <div class="repas-totals">
+          <span class="repas-badge prot">${rP.toFixed(0)}g P</span>
+          <span class="repas-badge cal">${Math.round(rC)} kcal</span>
+        </div>
+      </div>
+      <div class="food-list">${foodRows}</div>
+      <button class="add-btn" onclick="openModal('${repas}')">＋ Ajouter</button>`;
+    container.appendChild(sec);
+  });
+  document.getElementById('totalProt').textContent=totalP.toFixed(0)+'g';
+  document.getElementById('totalCal').textContent=Math.round(totalC);
+  document.getElementById('barProt').style.width=Math.min(100,totalP/120*100)+'%';
+  document.getElementById('barCal').style.width=Math.min(100,totalC/1800*100)+'%';
+}
+function deleteEntry(repas,idx){const data=getToday();data[repas].splice(idx,1);saveToday(data);renderToday();}
+function getLast7Days(){return Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});}
+function renderWeek(){
+  updateWeekData();const days=getLast7Days();
+  const dayNames=days.map(d=>new Date(d).toLocaleDateString('fr-FR',{weekday:'short'}).slice(0,3));
+  const maxP=Math.max(...days.map(d=>weekData[d]?.prot||0),120);
+  const maxC=Math.max(...days.map(d=>weekData[d]?.cal||0),1800);
+  const barsP=document.getElementById('weekBarsP');const barsC=document.getElementById('weekBarsC');
+  barsP.innerHTML='';barsC.innerHTML='';
+  days.forEach((d,i)=>{
+    const p=weekData[d]?.prot||0;const c=weekData[d]?.cal||0;
+    const hP=Math.max(4,(p/maxP)*70);const hC=Math.max(4,(c/maxC)*70);
+    const isToday=d===today;
+    barsP.innerHTML+=`<div class="week-bar-wrap"><div class="week-bar prot" style="height:${hP}px;opacity:${isToday?1:0.5}"></div><div class="week-day" style="color:${isToday?'var(--accent)':'var(--muted)'}">${dayNames[i]}</div></div>`;
+    barsC.innerHTML+=`<div class="week-bar-wrap"><div class="week-bar cal" style="height:${hC}px;opacity:${isToday?1:0.5}"></div><div class="week-day" style="color:${isToday?'var(--cal-color)':'var(--muted)'}">${dayNames[i]}</div></div>`;
+  });
+}
+function renderDB(){
+  document.getElementById('db-list').innerHTML=foodDB.map(f=>`
+    <div class="food-item" style="background:var(--card);border-radius:10px;margin-bottom:6px;border:1px solid var(--border)">
+      <div><div class="food-name">${f.name}</div><div class="food-qty">pour 100g</div></div>
+      <div class="food-macros"><span class="macro p">${f.prot}g P</span><span class="macro c">${f.cal} kcal</span></div>
+    </div>`).join('');
+  document.getElementById('dbCount').textContent=foodDB.length;
+}
+function openModal(repas,dbModeFlag=false){
+  currentRepas=repas;dbMode=dbModeFlag;selectedFood=null;
+  document.getElementById('qtyInput').value='';
+  document.getElementById('prevProt').textContent='0g';
+  document.getElementById('prevCal').textContent='0';
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('notionStatus').style.display='none';
+  document.getElementById('newFoodForm').classList.remove('visible');
+  if(dbMode){
+    document.getElementById('modalTitle').textContent='Nouvel aliment';
+    document.getElementById('selectMode').style.display='none';
+    document.getElementById('newFoodForm').classList.add('visible');
+    document.getElementById('saveBtn').style.display='none';
+  } else {
+    document.getElementById('modalTitle').textContent='Ajouter — '+repas;
+    document.getElementById('selectMode').style.display='block';
+    document.getElementById('saveBtn').style.display='flex';
+    if(repas)document.getElementById('repasSelect').value=repas;
+    renderFoodGrid();
+  }
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function renderFoodGrid(){
+  document.getElementById('foodGrid').innerHTML=foodDB.map((f,i)=>`
+    <div class="food-chip ${selectedFood===i?'selected':''}" onclick="selectFood(${i})">
+      <div class="chip-name">${f.name}</div>
+      <div class="chip-macro">${f.prot}g P · ${f.cal} kcal</div>
+    </div>`).join('');
+}
+function selectFood(idx){selectedFood=idx;renderFoodGrid();updatePreview();}
+function updatePreview(){
+  const qty=parseFloat(document.getElementById('qtyInput').value)||0;
+  if(selectedFood!==null&&qty>0){
+    const f=foodDB[selectedFood];
+    document.getElementById('prevProt').textContent=(f.prot*qty/100).toFixed(1)+'g';
+    document.getElementById('prevCal').textContent=Math.round(f.cal*qty/100);
+    document.getElementById('saveBtn').disabled=false;
+  } else {
+    document.getElementById('prevProt').textContent='0g';
+    document.getElementById('prevCal').textContent='0';
+    document.getElementById('saveBtn').disabled=true;
+  }
+}
+function toggleNewFood(){document.getElementById('newFoodForm').classList.toggle('visible');}
+function saveNewFood(){
+  const name=document.getElementById('newFoodName').value.trim();
+  const prot=parseFloat(document.getElementById('newFoodProt').value);
+  const cal=parseFloat(document.getElementById('newFoodCal').value);
+  if(!name||isNaN(prot)||isNaN(cal)){alert('Remplis tous les champs');return;}
+  foodDB.push({name,prot,cal});
+  document.getElementById('newFoodName').value='';
+  document.getElementById('newFoodProt').value='';
+  document.getElementById('newFoodCal').value='';
+  document.getElementById('newFoodForm').classList.remove('visible');
+  renderFoodGrid();renderDB();
+  if(dbMode)closeModal();
+}
+async function saveEntry(){
+  if(selectedFood===null)return;
+  const qty=parseFloat(document.getElementById('qtyInput').value);
+  if(!qty||qty<=0)return;
+  const repas=document.getElementById('repasSelect').value;
+  const f=foodDB[selectedFood];
+  const prot=parseFloat((f.prot*qty/100).toFixed(1));
+  const cal=parseFloat((f.cal*qty/100).toFixed(1));
+  const entry={name:f.name,qty,prot,cal};
+  const data=getToday();
+  if(!data[repas])data[repas]=[];
+  data[repas].push(entry);
+  saveToday(data);renderToday();
+  await sendToNotion(entry,repas);
+  closeModal();
+}
+async function sendToNotion(entry,repas){
+  const status=document.getElementById('notionStatus');
+  status.style.display='block';status.className='notion-status sending';status.textContent='⟳ Envoi vers Notion...';
+  try{
+    const response=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:"Tu es un assistant qui enregistre des données nutritionnelles dans Notion via MCP. Réponds uniquement OK quand c'est fait.",
+        messages:[{role:"user",content:`Crée une entrée dans la base de données Notion ID ${NOTION_DB_ID}:\n- Aliment: "${entry.name}"\n- Date: "${today}"\n- Repas: "${repas}"\n- Quantité (g): ${entry.qty}\n- Protéines (g): ${entry.prot}\n- Calories (kcal): ${entry.cal}`}],
+        mcp_servers:[{type:"url",url:"https://mcp.notion.com/mcp",name:"notion-mcp"}]
+      })
+    });
+    const data=await response.json();
+    if(data.content&&data.content.length>0){status.className='notion-status ok';status.textContent='✓ Enregistré dans Notion';}
+    else throw new Error('No response');
+  }catch(e){status.className='notion-status err';status.textContent='✗ Erreur Notion — données sauvegardées localement';}
+}
+function switchTab(tab){
+  ['today','week','db'].forEach((t,i)=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+    document.querySelectorAll('.tab')[i].classList.toggle('active',t===tab);
+    document.querySelectorAll('.nav-item')[i].classList.toggle('active',t===tab);
+  });
+  if(tab==='week')renderWeek();
+  if(tab==='db')renderDB();
+}
+renderToday();
+</script>
+</body>
+</html>
