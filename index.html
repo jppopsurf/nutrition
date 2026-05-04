@@ -373,7 +373,7 @@ async function sendToNotion(entry, repas) {
   status.style.display = 'block';
   status.className = 'notion-status sending';
   status.textContent = '⟳ Envoi vers Notion...';
-  try {
+try {
     const response = await fetch("https://raspy-violet-2cdf.jpdujay.workers.dev", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -386,18 +386,16 @@ async function sendToNotion(entry, repas) {
         cal: entry.cal
       })
     });
-    const data = await response.json();
-    if (data.id) {
+    if (response.ok) {
       status.className = 'notion-status ok';
       status.textContent = '✓ Enregistré dans Notion';
     } else {
-      throw new Error('Erreur');
+      throw new Error('Erreur ' + response.status);
     }
   } catch(e) {
     status.className = 'notion-status err';
     status.textContent = '✗ Erreur Notion — données sauvegardées localement';
   }
-}
 renderToday();
 </script>
 </body>
